@@ -1,128 +1,130 @@
 package avl;
 
 public class Avl<T extends Comparable<T>> {
-    protected No<T> raiz = new No<>(null);
+    protected No<T> raiz;
 
-    private int getAltura(No<T> no){
+    private int getAltura(No<T> no) {
         if (no == null) return 0;
         return no.altura;
     }
 
-    private int getBal(No<T> no){
-        if (no == null) return 0;
-        return no.altura;
-    }
-
-    void balancear(No<T> no, int bal){
-        if (bal == 2){
-            if (no.direito.esquerdo.altura > no.direito.direito.altura){
-                rotacionaDireita(no.direito);
-            }rotacionaEsquerda(no);
-        }else {
-            if (no.esquerdo.direito.altura > no.esquerdo.esquerdo.altura){
-                rotacionaEsquerda(no.esquerdo);
-            }rotacionaDireita(no);
+    private int fatorDeBalanceamento(No<T> no) {
+        if (no == null) {
+            return 0;
         }
+        return getAltura(no.esquerdo) - getAltura(no.direito);
     }
 
-    void rotacionaEsquerda(No<T> no) {
-        No<T> filho = no.direito;
-        No<T> neto = filho.esquerdo;
+    private No<T> rotacionaEsquerda(No<T> y) {
+        No<T> x = y.direito;
+        No<T> T2 = x.esquerdo;
+        x.esquerdo = y;
+        y.direito = T2;
 
-        T aux = no.info;
-        no.info = filho.info;
-        filho.info = aux;
+        novaAltura(y);
+        novaAltura(x);
 
-        no.direito = filho.direito;
-        filho.direito = neto;
-        filho.esquerdo = no.esquerdo;
-        no.esquerdo = filho;
-
-        no.altura = Math.max(getAltura(no.esquerdo), getAltura(no.direito)) + 1;
-        filho.altura = Math.max(getAltura(filho.esquerdo), getAltura(filho.direito)) + 1;
+        return x;
     }
 
-    void rotacionaDireita(No<T> no) {
-        No<T> filho = no.esquerdo;
-        No<T> neto = filho.direito;
+    private No<T> rotacionaDireita(No<T> y) {
+        No<T> x = y.esquerdo;
+        No<T> T2 = x.direito;
 
-        T aux = no.info;
-        no.info = filho.info;
-        filho.info = aux;
+        x.direito = y;
+        y.esquerdo = T2;
 
-        no.esquerdo = filho.esquerdo;
-        filho.esquerdo = neto;
-        filho.direito = no.direito;
-        no.direito = filho;
+        novaAltura(y);
+        novaAltura(x);
 
-        no.altura = Math.max(getAltura(no.esquerdo), getAltura(no.direito)) + 1;
-        filho.altura = Math.max(getAltura(filho.esquerdo), getAltura(filho.direito)) + 1;
+        return x;
     }
 
-    void insercao(T valor){
-        insercao(valor, raiz);
+    void insercao(T valor) {
+        raiz = insercao(raiz, valor);
     }
 
-    private boolean insercao(T valor, No<T> no){
-        boolean ret = true;
-        int bal;
-        if (no.info == null){
-            new No<>(valor);
-        }else {
-            if (valor.compareTo(no.info) > 0){
-                ret = insercao(valor, no.direito);
-            } else if (valor.compareTo(no.info) < 0) {
-                ret = insercao(valor, no.esquerdo);
-            }else ret = false;
-            if (ret){
-                no.altura = 1 + Math.max(getAltura(no.esquerdo), getAltura(no.direito));
-                bal = getBal(no);
-                if (bal != 1){
-                    balancear(no, bal);
-                }
+    private No<T> insercao(No<T> no, T valor) {
+        if (no == null) return new No<>(valor);
+        if (valor.compareTo(no.info) > 0) {
+            no.direito = insercao(no.direito, valor);
+        } else if (valor.compareTo(no.info) < 0) {
+            no.esquerdo = insercao(no.esquerdo, valor);
+        } else return no;
+        return balancear(no, valor);
+    }
+
+    private No<T> balancear(No<T> no, T valor) {
+        novaAltura(no);
+        int bal = fatorDeBalanceamento(no);
+        if (bal > 1) {
+            if (valor.compareTo(no.info) >= 0) {
+                no.esquerdo = rotacionaEsquerda(no.esquerdo);
             }
+            return rotacionaDireita(no);
         }
-        return ret;
+        if (bal < -1) {
+            if (valor.compareTo(no.info) <= 0) {
+                no.direito = rotacionaDireita(no.direito);
+            }
+            return rotacionaEsquerda(no);
+        }
+        return no;
     }
-    void remocao(T valor){
-        remocao(valor,raiz);
+
+    private void novaAltura(No<T> no) {
+        if (no != null) {
+            no.altura = Math.max(getAltura(no.esquerdo), getAltura(no.direito)) + 1;
+        }
+    }
+
+    void remocao(T valor) {
+        raiz = remocao(valor, raiz);
     }
 
     private No<T> remocao(T valor, No<T> no) {
-        No<T> ret = null;
-        if (no.info != null) {
-            if (valor.compareTo(no.info) > 0) ret = remocao(valor, no.direito);
-            else if (valor.compareTo(no.info) < 0) ret = remocao(valor, no.esquerdo);
-            else {
-                ret = no;
-                if (no.direito != null && no.esquerdo != null) {
-                    T maiorDaEsquerda = retorneMaiorEsq(no);
-                    remocao(maiorDaEsquerda, no);
-                    no.info = maiorDaEsquerda;
-                } else if (no.esquerdo != null) {
-                    no = no.esquerdo;
-                } else {
-                    no = no.direito;
-                }
-                return ret;
-            }
-            if (ret != null) {
-                no.altura = 1 + Math.max(getAltura(no.esquerdo), getAltura(no.direito));
-                int bal = getBal(no);
-                if (bal != 1) balancear(no, bal);
-            }
-        }
-        return ret;
-    }
-    private T retorneMaiorEsq(No<T> no){
         if (no == null) return null;
-        while (no.direito != null) no = no.direito;
-        return no.info;
+        if (valor.compareTo(no.info) < 0) {
+            no.esquerdo = remocao(valor, no.esquerdo);
+        } else if (valor.compareTo(no.info) > 0) {
+            no.direito = remocao(valor, no.direito);
+        } else {
+            if (no.esquerdo == null) return no.direito;
+            else if (no.direito == null) return no.esquerdo;
+
+            No<T> sucessor = buscarMenor(no.direito);
+            no.info = sucessor.info;
+            no.direito = remocao(sucessor.info, no.direito);
+        }
+        novaAltura(no);
+        int bal = fatorDeBalanceamento(no);
+        if (bal > 1) {
+            if (fatorDeBalanceamento(no.esquerdo) < 0) {
+                no.esquerdo = rotacionaEsquerda(no.esquerdo);
+            }
+            return rotacionaDireita(no);
+        }
+        if (bal < -1) {
+            if (fatorDeBalanceamento(no.direito) > 0) {
+                no.direito = rotacionaDireita(no.direito);
+            }
+            return rotacionaEsquerda(no);
+        }
+        return no;
     }
-    void impressaoPreOrdem(){
+
+    private No<T> buscarMenor(No<T> no) {
+        while (no.esquerdo != null) {
+            no = no.esquerdo;
+        }
+        return no;
+    }
+
+    void impressaoPreOrdem() {
         impressaoPreOrdem(raiz);
     }
-    private void impressaoPreOrdem(No<T> no){
+
+    private void impressaoPreOrdem(No<T> no) {
         if (no != null) {
             if (no.info != null) {
                 System.out.print(no.info + " ");
@@ -131,5 +133,4 @@ public class Avl<T extends Comparable<T>> {
             impressaoPreOrdem(no.direito);
         }
     }
-
 }
